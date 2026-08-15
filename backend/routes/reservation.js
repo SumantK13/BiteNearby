@@ -67,4 +67,53 @@ router.get('/mess/:messId/:date', authMiddleware, async (req, res) => {
   }
 });
 
+const MEAL_TIMES = {
+  day: 13,   // 1:00 PM in 24hr format
+  night: 20, // 8:00 PM
+};
+const CUTOFF_HOURS = 2;
+
+// CANCEL A RESERVATION
+router.delete('/:id', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'user') {
+      return res.status(403).json({ error: 'Only users can cancel reservations' });
+    }
+
+    const result = await reservationQueries.findById(req.params.id);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Reservation not found' });
+    }
+
+    const reservation = result.rows[0];
+
+    // Ensure the reservation belongs to the requesting user
+    if (reservation.user_id !== req.user.userId) {
+      return res.status(403).json({ error: 'You can only cancel your own reservations' });
+    }
+
+    // Calculate cutoff time based on meal type and date
+    const mealHour = MEAL_TIMES[reservation.meal_type] ?? MEAL_TIMES.day;
+    const mealDateTime = new Date(`${reservation.date}T00:00:00`);
+    mealDateTime.setHours(mealHour, 0, 0, 0);
+
+    const cutoffTime = new Date(mealDateTime.getTime() - CUTOFF_HOURS * 60 * 60 * 1000);
+    const now = new Date();
+
+    if (now >= cutoffTime) {
+      return res.status(400).json({
+        error: `Cancellation window has passed. Reservations must be cancelled at least ${CUTOFF_HOURS} hours before the meal.`,
+      });
+    }
+
+    await reservationQueries.deleteById(req.params.id);
+
+    res.json({ status: 'success', message: 'Reservation cancelled' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

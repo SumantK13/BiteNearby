@@ -6,7 +6,7 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { Loader2, UtensilsCrossed, LogOut } from "lucide-react";
-import MenuPanel from "@/components/shared/MenuPanel"
+import MenuPanel from "@/components/shared/MenuPanel";
 import { Button } from "@/components/ui/button";
 
 // Small helper to recenter map when location changes
@@ -88,6 +88,14 @@ export default function Dashboard() {
           <span className="font-bold text-gray-900">BiteNearby</span>
         </div>
         <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/reservations")}
+            className="text-gray-600"
+          >
+            My Reservations
+          </Button>
           <span className="text-sm text-gray-600">Hi, {user?.name}</span>
           <Button
             variant="ghost"

@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/context/AuthContext"
 import * as ownerApi from "@/lib/ownerApi"
 import LocationPicker from "@/components/shared/LocationPicker"
+import api from "@/lib/api"
 
 export default function OwnerDashboard() {
   const { user, logout } = useAuth()
@@ -313,17 +314,118 @@ function MenuManager({ mess }) {
             <div key={type} className="mb-4">
               <p className="text-xs font-medium text-orange-600 uppercase mb-2">{type} Meal</p>
               <div className="space-y-2">
-                {Object.values(dishes).map((d, i) => (
-                  <div key={i} className="flex items-center justify-between bg-gray-50 rounded-lg p-2.5 text-sm">
-                    <span className="font-medium text-gray-900">{d.name}</span>
-                    <Badge variant="secondary">₹{d.price}</Badge>
-                  </div>
+                {Object.entries(dishes).map(([dishId, d]) => (
+                  <DishRow
+                    key={dishId}
+                    dishId={dishId}
+                    dish={d}
+                    onUpdated={loadMenu}
+                  />
                 ))}
               </div>
             </div>
           )
         })}
       </div>
+    </div>
+  )
+}
+function DishRow({ dishId, dish, onUpdated }) {
+  const [editing, setEditing] = useState(false)
+  const [name, setName] = useState(dish.name)
+  const [price, setPrice] = useState(dish.price)
+  const [items, setItems] = useState(dish.items.join(", "))
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [error, setError] = useState("")
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError("")
+    try {
+      const itemsArray = items.split(",").map((i) => i.trim()).filter(Boolean)
+      await api.patch(`/menu/dish/${dishId}`, {
+        name,
+        price: parseFloat(price),
+        items: itemsArray,
+      })
+      setEditing(false)
+      onUpdated()
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to save")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!confirm(`Remove "${dish.name}" from your menu catalog?`)) return
+    setDeleting(true)
+    setError("")
+    try {
+      await api.delete(`/menu/dish/${dishId}`)
+      onUpdated()
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to delete")
+      setDeleting(false)
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="space-y-2 bg-gray-50 rounded-lg p-3">
+        <Input value={name} onChange={(e) => setName(e.target.value)} className="h-8 text-sm" placeholder="Dish name" />
+        <Input
+          value={price}
+          onChange={(e) => setPrice(e.target.value)}
+          type="number"
+          className="h-8 text-sm"
+          placeholder="Price"
+        />
+        <Input
+          value={items}
+          onChange={(e) => setItems(e.target.value)}
+          className="h-8 text-sm"
+          placeholder="Items (comma separated)"
+        />
+        {error && <p className="text-xs text-red-500">{error}</p>}
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSave} disabled={saving} className="h-8 bg-orange-500 hover:bg-orange-600">
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Save"}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)} className="h-8">
+            Cancel
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-2.5 text-sm group">
+      <div className="flex items-center justify-between">
+        <span className="font-medium text-gray-900">{dish.name}</span>
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary">₹{dish.price}</Badge>
+          <button
+            onClick={() => setEditing(true)}
+            className="text-xs text-gray-400 hover:text-orange-500"
+          >
+            Edit
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="text-xs text-gray-400 hover:text-red-500"
+          >
+            {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Delete"}
+          </button>
+        </div>
+      </div>
+      {dish.items.length > 0 && (
+        <p className="text-xs text-gray-500 mt-1">{dish.items.join(", ")}</p>
+      )}
+      {error && <p className="text-xs text-red-500 mt-1">{error}</p>}
     </div>
   )
 }

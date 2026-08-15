@@ -76,4 +76,63 @@ router.get('/menu/:messId/:date', async (req, res) => {
   }
 });
 
+router.patch('/dish/:id', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'messowner') {
+      return res.status(403).json({ error: 'Only mess owners can edit dishes' });
+    }
+
+    const { name, price, items } = req.body;
+
+    if (!name || !price) {
+      return res.status(400).json({ error: 'Name and price are required' });
+    }
+
+    const check = await dishQueries.findByIdWithMess(req.params.id);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Dish not found' });
+    }
+    if (check.rows[0].mess_owner_id !== req.user.ownerId) {
+      return res.status(403).json({ error: 'You do not own this dish' });
+    }
+
+    const result = await dishQueries.update(req.params.id, name, price);
+
+    // Replace items: delete old ones, insert new ones
+    if (Array.isArray(items)) {
+      await dishQueries.deleteItemsByDishId(req.params.id);
+      for (const item of items) {
+        await dishItemQueries.addItem(req.params.id, item);
+      }
+    }
+
+    res.json({ status: 'success', dish: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+// DELETE A DISH (Mess Owner only, must own the mess)
+router.delete('/dish/:id', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'messowner') {
+      return res.status(403).json({ error: 'Only mess owners can delete dishes' });
+    }
+
+    const check = await dishQueries.findByIdWithMess(req.params.id);
+    if (check.rows.length === 0) {
+      return res.status(404).json({ error: 'Dish not found' });
+    }
+    if (check.rows[0].mess_owner_id !== req.user.ownerId) {
+      return res.status(403).json({ error: 'You do not own this dish' });
+    }
+
+    await dishQueries.deleteById(req.params.id);
+    res.json({ status: 'success', message: 'Dish deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

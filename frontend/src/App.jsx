@@ -5,6 +5,7 @@ import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 import OwnerDashboard from './pages/OwnerDashboard'
 import 'leaflet/dist/leaflet.css'
+import MyReservations from './pages/MyReservations'
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/owner/dashboard" element={<OwnerDashboard />} />
+          <Route path="/reservations" element={<MyReservations />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -82,7 +82,27 @@ const dishQueries = {
     query('SELECT * FROM dishes WHERE mess_id = $1', [messId]),
 
   findById: (id) =>
-    query('SELECT * FROM dishes WHERE id = $1', [id])
+    query('SELECT * FROM dishes WHERE id = $1', [id]),
+  
+  update: (id, name, price) =>
+    query(
+      'UPDATE dishes SET name = $1, price = $2 WHERE id = $3 RETURNING *',
+      [name, price, id]
+    ),
+
+  deleteById: (id) =>
+    query('DELETE FROM dishes WHERE id = $1 RETURNING *', [id]),
+
+  findByIdWithMess: (id) =>
+    query(
+      `SELECT d.*, m.mess_owner_id 
+       FROM dishes d 
+       JOIN messes m ON m.id = d.mess_id 
+       WHERE d.id = $1`,
+      [id]
+    ),
+  deleteItemsByDishId: (dishId) =>
+    query('DELETE FROM dish_items WHERE dish_id = $1', [dishId]),
 };
 
 // Dish items queries
@@ -192,7 +212,7 @@ const reservationQueries = {
       'SELECT * FROM reservations WHERE user_id = $1 AND mess_id = $2 AND meal_type = $3 AND date = $4',
       [userId, messId, mealType, date]
     ),
-    
+
   findByMessAndDate: (messId, date) =>
     query(
       `SELECT r.*, u.name AS user_name, u.email 
@@ -202,6 +222,12 @@ const reservationQueries = {
        ORDER BY r.meal_type, u.name`,
       [messId, date]
     ),
+
+    findById: (id) =>
+      query('SELECT * FROM reservations WHERE id = $1', [id]),
+
+    deleteById: (id) =>
+      query('DELETE FROM reservations WHERE id = $1 RETURNING *', [id]),
 };
 
 module.exports = { 
