@@ -66,6 +66,27 @@ router.get('/nearby', async (req, res) => {
   }
 });
 
+// GET MY MESS (Mess Owner)
+router.get('/my-mess', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'messowner') {
+      return res.status(403).json({ error: 'Only mess owners can access this' });
+    }
+
+    const result = await messQueries.findByOwnerId(req.user.ownerId);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No mess found for this owner' });
+    }
+
+    res.json({ status: 'success', mess: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+
 // GET SINGLE MESS
 router.get('/:id', async (req, res) => {
   try {
@@ -81,5 +102,6 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 module.exports = router;

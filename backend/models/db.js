@@ -60,7 +60,10 @@ const messQueries = {
       WHERE distance < $3
       ORDER BY distance`,
       [latitude, longitude, radiusKm]
-    )
+    ),
+
+    findByOwnerId: (ownerId) =>
+    query('SELECT * FROM messes WHERE mess_owner_id = $1', [ownerId]),
 
 };
 
@@ -188,7 +191,17 @@ const reservationQueries = {
     query(
       'SELECT * FROM reservations WHERE user_id = $1 AND mess_id = $2 AND meal_type = $3 AND date = $4',
       [userId, messId, mealType, date]
-    )
+    ),
+    
+  findByMessAndDate: (messId, date) =>
+    query(
+      `SELECT r.*, u.name AS user_name, u.email 
+       FROM reservations r 
+       JOIN users u ON u.id = r.user_id 
+       WHERE r.mess_id = $1 AND r.date = $2
+       ORDER BY r.meal_type, u.name`,
+      [messId, date]
+    ),
 };
 
 module.exports = { 

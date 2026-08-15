@@ -52,4 +52,19 @@ router.get('/my-reservations/:date', authMiddleware, async (req, res) => {
   }
 });
 
+// GET RESERVATIONS FOR A MESS ON A DATE (Mess Owner)
+router.get('/mess/:messId/:date', authMiddleware, async (req, res) => {
+  try {
+    if (req.user.role !== 'messowner') {
+      return res.status(403).json({ error: 'Only mess owners can view this' });
+    }
+
+    const result = await reservationQueries.findByMessAndDate(req.params.messId, req.params.date);
+    res.json({ status: 'success', reservations: result.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
