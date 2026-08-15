@@ -7,7 +7,7 @@ const messRoutes = require('./routes/mess');
 const menuRoutes = require('./routes/menu');
 const enrollmentRoutes = require('./routes/enrollment');
 const reservationRoutes = require('./routes/reservation');
-
+const initCronJobs = require('./cron/dailyJobs');
 
 const app = express();
 
@@ -28,6 +28,8 @@ app.get('/health', (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  initCronJobs();
+
 });
 
 
